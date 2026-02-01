@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>食材賞味期限管理 </title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        h1, h2 {
+            color: #0056b3;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        /* ナビゲーション */
+        .navigation-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+            .navigation-buttons button {
+                flex: 1;
+                padding: 12px 20px;
+                font-size: 16px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+                .navigation-buttons button:hover {
+                    background-color: #0056b3;
+                    transform: translateY(-2px);
+                }
+
+                .navigation-buttons button.active {
+                    background-color: #004494;
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+                }
+
+        /* セクション制御 */
+        section {
+            display: none;
+        }
+
+            section.active {
+                display: block;
+            }
+
+        /* フォーム要素 */
+        form div {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        input[type="text"], input[type="date"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button[type="submit"] {
+            background-color: #28a745;
+            color: #fff;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            font-weight: bold;
+        }
+
+            button[type="submit"]:hover {
+                background-color: #218838;
+            }
+
+        /* カテゴリボタン */
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+            .category-buttons button {
+                padding: 8px 18px;
+                font-size: 14px;
+                background: #e9ecef;
+                color: #495057;
+                border: 1px solid #ced4da;
+                border-radius: 20px;
+                cursor: pointer;
+            }
+
+                .category-buttons button.active {
+                    background: #007bff;
+                    color: #fff;
+                    border-color: #007bff;
+                }
+
+        /* リスト・カード表示 */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .item-card {
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            position: relative;
+            border: 1px solid #eee;
+        }
+
+            .item-card h4 {
+                font-size: 1em;
+                margin: 0 0 5px 0;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .item-card p {
+                font-size: 0.85em;
+                margin: 0 0 3px 0;
+            }
+
+        .item-thumbnail {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .expiry-status {
+            font-size: 0.8em;
+            font-weight: bold;
+            display: block;
+            text-align: right;
+        }
+
+        .expired {
+            color: #dc3545;
+        }
+
+        .near-expiry {
+            color: #fd7e14;
+        }
+
+        .ok-expiry {
+            color: #28a745;
+        }
+
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 検索・ソート */
+        .search-and-sort-container {
+            margin-bottom: 20px;
+        }
+
+        #search-input {
+            margin-bottom: 10px;
+        }
+
+        .sort-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+            .sort-buttons button {
+                padding: 8px 12px;
+                border: 1px solid #ced4da;
+                border-radius: 6px;
+                background: #fff;
+                cursor: pointer;
+            }
+
+                .sort-buttons button.active {
+                    background: #007bff;
+                    color: #fff;
+                }
+
+        #camera-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+        }
+
+        .camera-wrapper {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #camera-feed-overlay {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ガイド枠 */
+        .target-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid #0f0;
+            box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+            transition: all 0.3s ease;
+            pointer-events: none; /* クリック透過 */
+        }
+
+        .box-date {
+            width: 70%;
+            height: 15%;
+            border-color: #ffc107;
+        }
+        /* 黄色：期限 */
+        .box-name {
+            width: 85%;
+            height: 40%;
+            border-color: #0dcaf0;
+        }
+        /* 水色：商品名 */
+
+        .guide-text {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            font-size: 1.2rem;
+        }
+
+        /* コントロールパネル */
+        .scan-control-panel {
+            background: #fff;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            margin-top: -20px;
+            z-index: 20;
+            text-align: center;
+        }
+
+        .scan-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .badge-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-info {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+
+        .scan-results-preview {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+
+        .btn-yellow {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+            .btn-yellow:hover {
+                background-color: #e0a800;
+            }
+
+        .btn-blue {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+
+            .btn-blue:hover {
+                background-color: #3dd5f3;
+            }
+
+        .skip-btn {
+            background: transparent;
+            border: 1px solid #6c757d;
+            color: #6c757d;
+            padding: 8px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .close-scan-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 50;
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* アラート */
+        .scan-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .d-none {
+            display: none !important;
+        }
+
+        /* フォーム上のサムネイル */
+        #form-preview-image {
+            display: block;
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            background: #eee;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        /* 起動ボタンのスタイル */
+        .start-scan-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+            .start-scan-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>食材賞味期限管理</h1>
+
+        <div class="navigation-buttons">
+            <button id="show-add-item-btn">食材登録</button>
+            <button id="show-item-list-btn" class="active">食材管理</button>
+        </div>
+
+        <!-- 食材登録セクション -->
+        <section id="add-item">
+            <h2>新しい食材を追加</h2>
+
+            <!-- 高機能スキャン起動ボタン -->
+            <button type="button" id="open-scan-overlay-btn" class="start-scan-btn">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                カメラで期限と商品名をスキャン
+            </button>
+
+            <form id="item-form">
+                <div>
+                    <label>写真 (スキャンまたはアップロード):</label>
+                    <img id="form-preview-image" src="" alt="商品写真(未設定)" style="display:none;">
+                    <input type="hidden" id="item-image-data" name="itemImageData" />
+                </div>
+
+                <div>
+                    <label for="item-name">食材名:</label>
+                    <input type="text" id="item-name" name="itemName" placeholder="スキャンで自動入力、または手入力" required />
+                </div>
+
+                <div>
+                    <label for="expiry-date">賞味期限:</label>
+                    <input type="date" id="expiry-date" name="expiryDate" required />
+                </div>
+
+                <div>
+                    <label>カテゴリ:</label>
+                    <div class="category-buttons">
+                        <button type="button" data-category="野菜">野菜</button>
+                        <button type="button" data-category="肉類">肉類</button>
+                        <button type="button" data-category="魚類">魚類</button>
+                        <button type="button" data-category="乳製品">乳製品</button>
+                        <button type="button" data-category="調味料">調味料</button>
+                        <button type="button" data-category="飲料">飲料</button>
+                        <button type="button" data-category="アイス">アイス</button>
+                        <button type="button" data-category="果物">果物</button>
+                        <button type="button" data-category="冷凍食品">冷凍食品</button>
+                        <button type="button" data-category="菓子">菓子</button>
+                        <button type="button" data-category="麺類">麺類</button>
+                        <button type="button" data-category="パン">パン</button>
+                        <button type="button" data-category="その他" class="active">その他</button>
+                    </div>
+                    <input type="text" id="custom-category" placeholder="または新しいカテゴリを入力" style="margin-top: 10px;" />
+
+                    <input type="hidden" id="item-category" name="itemCategory" value="その他" />
+                </div>
+
+                <button type="submit">保存する</button>
+            </form>
+        </section>
+
+        <!-- 食材一覧セクション -->
+        <section id="item-list" class="active">
+            <h2>登録済み食材</h2>
+            <div class="search-and-sort-container">
+                <input type="text" id="search-input" placeholder="食材名を検索..." />
+                <div class="sort-buttons">
+                    <button id="sort-by-near-expiry" class="active">期限が近い順</button>
+                    <button id="sort-by-category">カテゴリ順</button>
+                </div>
+            </div>
+            <div id="items-by-category"></div>
+        </section>
+
+        <!-- 通知設定 -->
+        <div id="notification-settings" style="margin-top: 30px; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px;">
+            <h3 style="font-size:1.1em; border:none; margin:0 0 10px 0;">🔔 通知設定 (期限3日前)</h3>
+            <p id="notification-status" style="margin:0 0 10px 0; font-size:0.9em;">通知状態を確認中...</p>
+            <button type="button" id="request-notification-permission"
+                    style="background-color: #ffc107; color: #343a40; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">
+                通知を許可する
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- スキャン用オーバーレイ (コード1の機能) -->
+    <!-- ========================================== -->
+    <div id="camera-overlay" class="d-none">
+        <button id="close-scan-btn" class="close-scan-btn">✕ 閉じる</button>
+
+        <div class="camera-wrapper">
+            <video id="cameraFeed" autoplay playsinline muted></video>
+
+            <!-- ガイド枠 -->
+            <div id="targetBox" class="target-box box-date">
+                <div id="guideText" class="guide-text">Step 1: 賞味期限</div>
+            </div>
+
+            <!-- 撮影用Canvas (非表示) -->
+            <canvas id="captureCanvas" style="display: none;"></canvas>
+        </div>
+
+        <div class="scan-control-panel">
+            <!-- ステップ表示 -->
+            <div class="mb-2">
+                <span id="stepBadge" class="scan-badge badge-warning">STEP 1/2</span>
+            </div>
+
+            <!-- 途中経過表示 -->
+            <div class="scan-results-preview">
+                <small class="text-muted">賞味期限:</small> <span id="tempDateResult" style="font-weight:bold;">---</span><br>
+                <small class="text-muted">商品名:</small> <span id="tempNameResult" style="font-weight:bold;">---</span>
+            </div>
+
+            <!-- エラーメッセージ -->
+            <div id="scanError" class="scan-error">
+                <strong>読み取れませんでした。</strong><br>
+                再試行するか、スキップしてください。
+            </div>
+
+            <!-- 操作ボタン -->
+            <button id="actionBtn" class="action-btn btn-yellow">
+                <span class="btn-text">賞味期限をスキャン</span>
+            </button>
+
+            <!-- スキップボタン -->
+            <button id="skipBtn" class="skip-btn d-none">
+                手入力する (スキップ)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 変数管理 (アプリ全体)
+            let foodItems = JSON.parse(localStorage.getItem('foodItems')) || [];
+            let currentSortOrder = 'near-expiry';
+
+            // 変数管理
+            let currentStep = 0; // 0:期限, 1:商品名
+            let scannedDate = "";
+            let scannedName = "";
+            let productBlob = null; // 撮影画像
+            let stream = null; // カメラストリーム
+
+            //DOM要素取得
+            const showAddItemBtn = document.getElementById('show-add-item-btn');
+            const showItemListBtn = document.getElementById('show-item-list-btn');
+            const addItemSection = document.getElementById('add-item');
+            const itemListSection = document.getElementById('item-list');
+            const itemForm = document.getElementById('item-form');
+            const itemsByCategoryDiv = document.getElementById('items-by-category');
+            const categoryButtons = document.querySelectorAll('.category-buttons button');
+            const itemCategoryInput = document.getElementById('item-category');
+            const customCategoryInput = document.getElementById('custom-category');
+            const sortButtons = document.querySelectorAll('.sort-buttons button');
+            const searchInput = document.getElementById('search-input');
+
+            const itemNameInput = document.getElementById('item-name');
+            const expiryDateInput = document.getElementById('expiry-date');
+            const formPreviewImage = document.getElementById('form-preview-image');
+            const itemImageDataInput = document.getElementById('item-image-data');
+
+            // DOM要素取得
+            const openScanBtn = document.getElementById('open-scan-overlay-btn');
+            const cameraOverlay = document.getElementById('camera-overlay');
+            const closeScanBtn = document.getElementById('close-scan-btn');
+
+            const video = document.getElementById('cameraFeed');
+            const canvas = document.getElementById('captureCanvas');
+            const targetBox = document.getElementById('targetBox');
+            const guideText = document.getElementById('guideText');
+            const actionBtn = document.getElementById('actionBtn');
+            const skipBtn = document.getElementById('skipBtn');
+            const stepBadge = document.getElementById('stepBadge');
+            const scanError = document.getElementById('scanError');
+            const tempDateResult = document.getElementById('tempDateResult');
+            const tempNameResult = document.getElementById('tempNameResult');
+
+            function switchSection(activeSection, activeBtn) {
+                document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.navigation-buttons button').forEach(b => b.classList.remove('active'));
+                activeSection.classList.add('active');
+                activeBtn.classList.add('active');
+            }
+
+            showAddItemBtn.addEventListener('click', () => switchSection(addItemSection, showAddItemBtn));
+            showItemListBtn.addEventListener('click', () => {
+                renderItems();
+                switchSection(itemListSection, showItemListBtn);
+            });
+
+            // カテゴリ選択ボタン
+            categoryButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    categoryButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+
+                    const selectedValue = e.target.dataset.category;
+                    itemCategoryInput.value = selectedValue;
+                    customCategoryInput.value = selectedValue; // テキストボックスにも反映
+                });
+            });
+
+            // カテゴリ手入力時の動作
+            customCategoryInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                itemCategoryInput.value = value;
+
+                // 入力した文字が既存のボタン名と一致したらボタンを光らせる
+                categoryButtons.forEach(btn => {
+                    if (btn.dataset.category === value) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            });
+
+            // ソート
+            sortButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    sortButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentSortOrder = e.target.id.replace('sort-by-', '');
+                    renderItems();
+                });
+            });
+            searchInput.addEventListener('input', renderItems);
+
+            // スキャン開始 (オーバーレイ表示)
+            openScanBtn.addEventListener('click', async () => {
+                cameraOverlay.classList.remove('d-none');
+                resetScanState();
+                await startCamera();
+            });
+
+            // スキャン終了 (閉じる)
+            closeScanBtn.addEventListener('click', () => {
+                stopCamera();
+                cameraOverlay.classList.add('d-none');
+            });
+
+            async function startCamera() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" }
+                    });
+                    video.srcObject = stream;
+                } catch (err) {
+                    console.error(err);
+                    alert("カメラを起動できませんでした。HTTPS接続またはlocalhostか確認してください。");
+                    cameraOverlay.classList.add('d-none');
+                }
+            }
+
+            function stopCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                video.srcObject = null;
+            }
+
+            function resetScanState() {
+                currentStep = 0;
+                scannedDate = "";
+                scannedName = "";
+                productBlob = null;
+
+                // UIリセット
+                tempDateResult.textContent = "---";
+                tempNameResult.textContent = "---";
+                scanError.classList.add('d-none');
+                skipBtn.classList.add('d-none');
+
+                // UI
+                targetBox.className = 'target-box box-date';
+                guideText.textContent = 'Step 1: 賞味期限';
+                stepBadge.textContent = 'STEP 1/2';
+                stepBadge.className = 'scan-badge badge-warning';
+
+                actionBtn.className = 'action-btn btn-yellow';
+                actionBtn.querySelector('.btn-text').textContent = '賞味期限をスキャン';
+                actionBtn.disabled = false;
+            }
+
+            // スキャン実行ボタン
+            actionBtn.addEventListener('click', async () => {
+                actionBtn.disabled = true;
+                actionBtn.querySelector('.btn-text').textContent = '読み取り中...';
+                scanError.classList.add('d-none');
+
+                // キャプチャ
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('file', blob);
+
+                    //賞味期限
+                    if (currentStep === 0) {
+                        try {
+                            const res = await fetch('/api/ocr/date', { method: 'POST', body: formData });
+                            if (!res.ok) throw new Error('API Error');
+                            const data = await res.json();
+
+                            if (data.success && data.result) {
+                                scannedDate = data.result;
+                                tempDateResult.textContent = scannedDate;
+                                setupStep2();
+                            } else {
+                                throw new Error('No text detected');
+                            }
+                        } catch (e) {
+                            console.log("OCR Error (Date):", e);
+                            //  スキップボタンを表示
+                            showScanError();
+                        }
+                    }
+                    // 商品名 
+                    else {
+                        productBlob = blob; // 最新の写真を保存
+                        try {
+                            const res = await fetch('/api/ocr/name', { method: 'POST', body: formData });
+                            if (!res.ok) throw new Error('API Error');
+                            const data = await res.json();
+
+                            if (data.success && data.result) {
+                                scannedName = data.result;
+                                tempNameResult.textContent = scannedName;
+                                finishScan();
+                            } else {
+                                throw new Error('No text detected');
+                            }
+                        } catch (e) {
+                            console.log("OCR Error (Name):", e);
+                            showScanError();
+                        }
+                    }
+                    actionBtn.disabled = false;
+                    const btnLabel = currentStep === 0 ? '賞味期限をスキャン' : '商品名をスキャン';
+                    actionBtn.querySelector('.btn-text').textContent = btnLabel;
+                }, 'image/png');
+            });
+
+            // スキップボタン
+            skipBtn.addEventListener('click', () => {
+                scanError.classList.add('d-none');
+                if (currentStep === 0) {
+                    scannedDate = ""; // 手入力待ち
+                    tempDateResult.textContent = "(手入力)";
+                    setupStep2();
+                } else {
+                    // 商品名スキップ時は、直前に撮ろうとした写真を確保
+                    if (!productBlob) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                            productBlob = blob;
+                            scannedName = "";
+                            finishScan();
+                        });
+                    } else {
+                        scannedName = "";
+                        finishScan();
+                    }
+                }
+            });
+
+            function showScanError() {
+                scanError.classList.remove('d-none');
+                skipBtn.classList.remove('d-none');
+            }
+
+            function setupStep2() {
+                currentStep = 1;
+                scanError.classList.add('d-none');
+                skipBtn.classList.add('d-none');
+
+                targetBox.className = 'target-box box-name';
+                guideText.textContent = 'Step 2: 商品名';
+                stepBadge.textContent = 'STEP 2/2';
+                stepBadge.className = 'scan-badge badge-info';
+
+                actionBtn.className = 'action-btn btn-blue';
+                actionBtn.querySelector('.btn-text').textContent = '商品名をスキャン';
+            }
+
+            // スキャン完了 → フォーム入力
+            function finishScan() {
+                stopCamera();
+                cameraOverlay.classList.add('d-none');
+
+                // フォームへ値をセット
+                if (scannedName) itemNameInput.value = scannedName;
+
+                // 日付解析とセット (YYYY-MM-DD形式に変換)
+                if (scannedDate) {
+                    const parsedDate = parseExpiryDate(scannedDate);
+                    if (parsedDate) expiryDateInput.value = parsedDate;
+                }
+
+                // 画像処理 (Blob -> DataURL -> Preview & Hidden Input)
+                if (productBlob) {
+                    const reader = new FileReader();
+                    reader.onloadend = function () {
+                        const base64data = reader.result;
+                        formPreviewImage.src = base64data;
+                        formPreviewImage.style.display = 'block';
+                        itemImageDataInput.value = base64data;
+                    }
+                    reader.readAsDataURL(productBlob);
+                }
+
+                alert("スキャン完了！内容を確認して保存してください。");
+            }
+
+            // 日付解析ロジック (コード2由来)
+            function z2h(str) { return str.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)); }
+            function lastDayOfMonth(y, m) { return new Date(y, m, 0).getDate(); }
+            function pad2(n) { return String(n).padStart(2, '0'); }
+            function toISO(y, m, d) { return `${y}-${pad2(m)}-${pad2(d)}`; }
+            function parseExpiryDate(raw) {
+                const text = z2h(raw || '').replace(/\s+/g, '');
+                let m;
+                // 2025.11.23, 2025/11/23, 2025年11月23日
+                m = text.match(/(20\d{2}|19\d{2})[\.\/-年](\d{1,2})[\.\/-月]?((\d{1,2})日?)?/);
+                if (m) {
+                    const y = parseInt(m[1], 10), mon = parseInt(m[2], 10);
+                    const day = m[4] ? parseInt(m[4], 10) : lastDayOfMonth(y, mon);
+                    if (mon >= 1 && mon <= 12) return toISO(y, mon, Math.min(day, lastDayOfMonth(y, mon)));
+                }
+                // 25.11.23 (YY.MM.DD)
+                m = text.match(/(\d{2})[\.\/-](\d{1,2})(?:[\.\/-](\d{1,2}))?/);
+                if (m) {
+                    let yy = parseInt(m[1], 10), y = (yy < 80 ? 2000 + yy : 1900 + yy);
+                    const mon = parseInt(m[2], 10);
+                    const day = m[3] ? parseInt(m[3], 10) : lastDayOfMonth(y, mon);
+                    if (mon >= 1 && mon <= 12) return toISO(y, mon, Math.min(day, lastDayOfMonth(y, mon)));
+                }
+                return null;
+            }
+
+            itemForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = itemNameInput.value.trim();
+                const expiry = expiryDateInput.value;
+                const category = itemCategoryInput.value || 'その他';
+
+                if (!name || !expiry) {
+                    alert('食材名と賞味期限は必須です。');
+                    return;
+                }
+
+                const newItem = {
+                    id: Date.now().toString(),
+                    name,
+                    category,
+                    expiryDate: expiry,
+                    image: itemImageDataInput.value || ''
+                };
+
+                foodItems.push(newItem);
+                localStorage.setItem('foodItems', JSON.stringify(foodItems));
+
+                // フォームリセット
+                itemForm.reset();
+                formPreviewImage.src = "";
+                formPreviewImage.style.display = "none";
+                itemImageDataInput.value = "";
+                categoryButtons.forEach(b => b.classList.remove('active'));
+                document.querySelector('button[data-category="その他"]').classList.add('active');
+                itemCategoryInput.value = "その他";
+
+                alert('食材を追加しました！');
+                renderItems();
+                showItemListBtn.click();
+            });
+
+            function renderItems() {
+                itemsByCategoryDiv.innerHTML = '';
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredItems = foodItems.filter(item =>
+                    item.name.toLowerCase().includes(searchTerm)
+                );
+
+                if (!filteredItems.length) {
+                    itemsByCategoryDiv.innerHTML = '<p style="text-align:center;color:#666; margin-top:20px;">登録された食材はありません。</p>';
+                    return;
+                }
+
+                let sortedItems = [...filteredItems];
+                if (currentSortOrder === 'near-expiry') {
+                    sortedItems.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+                } else if (currentSortOrder === 'category') {
+                    sortedItems.sort((a, b) => {
+                        if (a.category < b.category) return -1;
+                        if (a.category > b.category) return 1;
+                        return new Date(a.expiryDate) - new Date(b.expiryDate);
+                    });
+                }
+
+                // カテゴリごとにグループ化
+                const grouped = sortedItems.reduce((acc, item) => {
+                    (acc[item.category] ||= []).push(item);
+                    return acc;
+                }, {});
+
+                Object.keys(grouped).forEach((category) => {
+                    const section = document.createElement('div');
+                    section.style.marginBottom = '20px';
+
+                    const h3 = document.createElement('h3');
+                    h3.textContent = category;
+                    h3.style.fontSize = '1.1em';
+                    h3.style.color = '#007bff';
+                    section.appendChild(h3);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'items-grid';
+
+                    grouped[category].forEach((item) => {
+                        const card = document.createElement('div');
+                        card.className = 'item-card';
+
+                        // 画像
+                        if (item.image) {
+                            const img = document.createElement('img');
+                            img.src = item.image;
+                            img.className = 'item-thumbnail';
+                            card.appendChild(img);
+                        } else {
+                            // ダミー画像領域
+                            const dummy = document.createElement('div');
+                            dummy.style.height = '100px';
+                            dummy.style.background = '#f0f0f0';
+                            dummy.style.borderRadius = '4px';
+                            dummy.style.marginBottom = '5px';
+                            dummy.style.display = 'flex';
+                            dummy.style.alignItems = 'center';
+                            dummy.style.justifyContent = 'center';
+                            dummy.style.color = '#ccc';
+                            dummy.textContent = 'No Image';
+                            card.appendChild(dummy);
+                        }
+
+                        const nameTitle = document.createElement('h4');
+                        nameTitle.textContent = item.name;
+                        card.appendChild(nameTitle);
+
+                        const expiryP = document.createElement('p');
+                        expiryP.textContent = `期限: ${item.expiryDate}`;
+                        card.appendChild(expiryP);
+
+                        // 期限ステータス計算
+                        const status = document.createElement('span');
+                        status.className = 'expiry-status';
+                        const remain = daysDiff(new Date(), new Date(item.expiryDate));
+                        if (remain < 0) {
+                            status.textContent = `期限切れ ${Math.abs(remain)}日`;
+                            status.classList.add('expired');
+                        } else if (remain <= 3) {
+                            status.textContent = `あと ${remain}日`;
+                            status.classList.add('near-expiry');
+                        } else {
+                            status.textContent = `あと ${remain}日`;
+                            status.classList.add('ok-expiry');
+                        }
+                        card.appendChild(status);
+
+                        // 削除ボタン
+                        const delBtn = document.createElement('button');
+                        delBtn.textContent = '×';
+                        delBtn.className = 'delete-button';
+                        delBtn.addEventListener('click', () => {
+                            if (confirm(`${item.name} を削除しますか？`)) {
+                                foodItems = foodItems.filter(x => x.id !== item.id);
+                                localStorage.setItem('foodItems', JSON.stringify(foodItems));
+                                renderItems();
+                            }
+                        });
+                        card.appendChild(delBtn);
+
+                        grid.appendChild(card);
+                    });
+                    section.appendChild(grid);
+                    itemsByCategoryDiv.appendChild(section);
+                });
+            }
+
+            function daysDiff(from, to) {
+                const d1 = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+                const d2 = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+                return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            }
+
+
+            //通知機能
+            const reqPermBtn = document.getElementById('request-notification-permission');
+            const notifStatus = document.getElementById('notification-status');
+
+            function checkNotificationStatus() {
+                if (!("Notification" in window)) {
+                    notifStatus.textContent = 'このブラウザは通知非対応です';
+                    reqPermBtn.style.display = 'none';
+                    return;
+                }
+                if (Notification.permission === "granted") {
+                    notifStatus.textContent = '✅ 通知は許可されています';
+                    reqPermBtn.style.display = 'none';
+                    checkAndSendNotifications();
+                } else if (Notification.permission === "denied") {
+                    notifStatus.textContent = '❌ 通知はブロックされています';
+                } else {
+                    notifStatus.textContent = '⚠️ 通知は未許可です';
+                }
+            }
+
+            reqPermBtn.addEventListener('click', () => {
+                Notification.requestPermission().then(permission => {
+                    checkNotificationStatus();
+                });
+            });
+
+            function checkAndSendNotifications() {
+                if (Notification.permission !== "granted") return;
+                const today = new Date();
+                const nearItems = foodItems.filter(item => {
+                    const r = daysDiff(today, new Date(item.expiryDate));
+                    return r >= 0 && r <= 3;
+                });
+
+                if (nearItems.length > 0) {
+                    new Notification(`賞味期限アラート`, {
+                        body: `${nearItems.length}個の食材の期限が3日以内に迫っています！`,
+                    });
+                }
+            }
+
+            // 初期化実行
+            renderItems();
+            checkNotificationStatus();
+            switchSection(itemListSection, showItemListBtn);
+        });
+    </script>
+</body>
+</html>
