@@ -915,6 +915,8 @@
                 formPreviewImage.src = "";
                 formPreviewImage.style.display = "none";
                 itemImageDataInput.value = "";
+                renderItems(); // 一覧を更新
+                checkAndSendNotifications();
                 categoryButtons.forEach(b => b.classList.remove('active'));
                 document.querySelector('button[data-category="その他"]').classList.add('active');
                 itemCategoryInput.value = "その他";
@@ -1092,3 +1094,4 @@
     </script>
 </body>
 </html>
+
